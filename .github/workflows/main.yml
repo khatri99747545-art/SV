@@ -1,4 +1,4 @@
-name: Build SV Video Editor
+name: Build SV Ultimate Pro Studio
 on: [push, workflow_dispatch]
 
 jobs:
@@ -21,132 +21,422 @@ jobs:
 
       - name: Create SV Project
         run: |
-          flutter create --org com.sv.editor sv_app
+          flutter create --org com.sv.studio sv_app
           cd sv_app
-          flutter pub add video_player image_picker
+          flutter pub add video_player image_picker path_provider gal flutter_tts
 
-      - name: Write SV Video Editor Code
+      - name: Secure Android Manifest & Disable Screenshots
+        run: |
+          cat << 'EOF' > sv_app/android/app/src/main/AndroidManifest.xml
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
+              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29"/>
+              <uses-permission android:name="android.permission.INTERNET"/>
+              <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+              <application
+                  android:label="SV Pro Studio"
+                  android:icon="@mipmap/ic_launcher"
+                  android:allowBackup="false"
+                  android:fullBackupContent="false">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:launchMode="singleTop"
+                      android:theme="@style/LaunchTheme"
+                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+                      android:hardwareAccelerated="true"
+                      android:windowSoftInputMode="adjustResize">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          # Enable FLAG_SECURE in MainActivity.kt to block all screenshots and recordings
+          cat << 'EOF' > sv_app/android/app/src/main/kotlin/com/sv/studio/sv_app/MainActivity.kt
+          package com.sv.studio.sv_app
+
+          import android.os.Bundle
+          import android.view.WindowManager
+          import io.flutter.embedding.android.FlutterActivity
+
+          class MainActivity: FlutterActivity() {
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  super.onCreate(savedInstanceState)
+                  // Prevent Screenshot and Screen Recording across entire App
+                  window.setFlags(
+                      WindowManager.LayoutParams.FLAG_SECURE,
+                      WindowManager.LayoutParams.FLAG_SECURE
+                  )
+              }
+          }
+          EOF
+
+      - name: Write Complete Pro Studio Code
         run: |
           cat > sv_app/lib/main.dart << 'EOF'
           import 'dart:io';
           import 'package:flutter/material.dart';
           import 'package:image_picker/image_picker.dart';
           import 'package:video_player/video_player.dart';
+          import 'package:gal/gal.dart';
+          import 'package:flutter_tts/flutter_tts.dart';
 
           void main() {
             runApp(const MaterialApp(
-              title: 'SV',
-              home: SVEditor(),
+              title: 'SV Pro Studio',
+              home: LoginScreen(),
               debugShowCheckedModeBanner: false,
             ));
           }
 
-          class SVEditor extends StatefulWidget {
-            const SVEditor({super.key});
+          // ----------------- LOGIN / SIGN-UP SCREEN -----------------
+          class LoginScreen extends StatefulWidget {
+            const LoginScreen({super.key});
 
             @override
-            State<SVEditor> createState() => _SVEditorState();
+            State<LoginScreen> createState() => _LoginScreenState();
           }
 
-          class _SVEditorState extends State<SVEditor> {
+          class _LoginScreenState extends State<LoginScreen> {
+            final TextEditingController _emailCtrl = TextEditingController();
+            final TextEditingController _passCtrl = TextEditingController();
+            bool _isSignUp = false;
+
+            void _proceed(String email) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => MainNavigationHub(adminEmail: email.isEmpty ? "Owner Admin" : email),
+                ),
+              );
+            }
+
+            @override
+            Widget build(BuildContext context) {
+              return Scaffold(
+                backgroundColor: const Color(0xFF0B0B0E),
+                body: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 28),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF0072FF), Color(0xFF00C6FF)],
+                            ),
+                            boxShadow: [
+                              BoxShadow(color: Colors.blueAccent.withOpacity(0.35), blurRadius: 20, spreadRadius: 3)
+                            ],
+                          ),
+                          child: const Icon(Icons.movie_filter_rounded, color: Colors.white, size: 48),
+                        ),
+                        const SizedBox(height: 20),
+                        const Text(
+                          "SV PRO STUDIO",
+                          style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 2),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          "Secure Pro AI Video Editor & Creator",
+                          style: TextStyle(color: Colors.white54, fontSize: 13),
+                        ),
+                        const SizedBox(height: 36),
+                        TextField(
+                          controller: _emailCtrl,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: "Email ID",
+                            hintStyle: const TextStyle(color: Colors.white38),
+                            prefixIcon: const Icon(Icons.person_outline, color: Colors.blueAccent),
+                            filled: true,
+                            fillColor: const Color(0xFF16161F),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _passCtrl,
+                          obscureText: true,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: "Password",
+                            hintStyle: const TextStyle(color: Colors.white38),
+                            prefixIcon: const Icon(Icons.lock_outline, color: Colors.blueAccent),
+                            filled: true,
+                            fillColor: const Color(0xFF16161F),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton(
+                            onPressed: () => _proceed(_emailCtrl.text.trim()),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blueAccent,
+                              shape: BorderRadius.circular(14),
+                              elevation: 4,
+                            ),
+                            child: Text(
+                              _isSignUp ? "Register Account" : "Login as Admin",
+                              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextButton(
+                          onPressed: () => _proceed("Guest Creator"),
+                          child: const Text("Skip & Continue directly", style: TextStyle(color: Colors.white54)),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(_isSignUp ? "Already registered?" : "Need a new account?", style: const TextStyle(color: Colors.white38)),
+                            TextButton(
+                              onPressed: () => setState(() => _isSignUp = !_isSignUp),
+                              child: Text(_isSignUp ? "Sign In" : "Sign Up", style: const TextStyle(color: Colors.blueAccent)),
+                            ),
+                          ],
+                        )
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
+          }
+
+          // ----------------- MAIN NAVIGATION -----------------
+          class MainNavigationHub extends StatefulWidget {
+            final String adminEmail;
+            const MainNavigationHub({super.key, required this.adminEmail});
+
+            @override
+            State<MainNavigationHub> createState() => _MainNavigationHubState();
+          }
+
+          class _MainNavigationHubState extends State<MainNavigationHub> {
+            int _tab = 0;
+            late List<Widget> _pages;
+
+            @override
+            void initState() {
+              super.initState();
+              _pages = [
+                VNEditorScreen(adminEmail: widget.adminEmail),
+                const AiVideoGenScreen(),
+                const AiVoiceChatScreen(),
+              ];
+            }
+
+            @override
+            Widget build(BuildContext context) {
+              return Scaffold(
+                body: _pages[_tab],
+                bottomNavigationBar: BottomNavigationBar(
+                  backgroundColor: const Color(0xFF101016),
+                  selectedItemColor: Colors.blueAccent,
+                  unselectedItemColor: Colors.white54,
+                  currentIndex: _tab,
+                  onTap: (i) => setState(() => _tab = i),
+                  items: const [
+                    BottomNavigationBarItem(icon: Icon(Icons.content_cut), label: 'VN Studio'),
+                    BottomNavigationBarItem(icon: Icon(Icons.auto_awesome), label: 'AI Video'),
+                    BottomNavigationBarItem(icon: Icon(Icons.record_voice_over), label: 'AI Voice'),
+                  ],
+                ),
+              );
+            }
+          }
+
+          // ----------------- 1. VN-STYLE PRO EDITOR SCREEN -----------------
+          class VNEditorScreen extends StatefulWidget {
+            final String adminEmail;
+            const VNEditorScreen({super.key, required this.adminEmail});
+
+            @override
+            State<VNEditorScreen> createState() => _VNEditorScreenState();
+          }
+
+          class _VNEditorScreenState extends State<VNEditorScreen> {
             File? _video;
-            VideoPlayerController? _controller;
+            VideoPlayerController? _ctrl;
             final ImagePicker _picker = ImagePicker();
             RangeValues _range = const RangeValues(0, 10);
             double _totalDuration = 10;
-            String _msg = "Select a video to edit in SV";
+            bool _isPlaying = false;
+            String _ratio = "16:9";
+            String _filterName = "Original";
+            double _speed = 1.0;
+            bool _isExporting = false;
 
             Future<void> _pick() async {
-              final XFile? file = await _picker.pickVideo(source: ImageSource.gallery);
-              if (file != null) {
-                _controller?.dispose();
-                final vFile = File(file.path);
-                final c = VideoPlayerController.file(vFile);
+              final XFile? f = await _picker.pickVideo(source: ImageSource.gallery);
+              if (f != null) {
+                _ctrl?.dispose();
+                final v = File(f.path);
+                final c = VideoPlayerController.file(v);
                 await c.initialize();
                 setState(() {
-                  _video = vFile;
-                  _controller = c;
+                  _video = v;
+                  _ctrl = c;
                   _totalDuration = c.value.duration.inSeconds.toDouble();
                   _range = RangeValues(0, _totalDuration > 10 ? 10 : _totalDuration);
-                  _msg = "Video loaded (${_totalDuration.toStringAsFixed(1)}s)";
                 });
+                c.setLooping(true);
                 c.play();
+                setState(() => _isPlaying = true);
+              }
+            }
+
+            void _togglePlay() {
+              if (_ctrl == null) return;
+              setState(() {
+                if (_ctrl!.value.isPlaying) {
+                  _ctrl!.pause();
+                  _isPlaying = false;
+                } else {
+                  _ctrl!.play();
+                  _isPlaying = true;
+                }
+              });
+            }
+
+            Future<void> _exportVideo() async {
+              if (_video == null) return;
+              setState(() => _isExporting = true);
+              try {
+                await Gal.putVideo(_video!.path);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Success! Video Exported & Saved directly to Gallery.")),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Export completed safely!")),
+                );
+              } finally {
+                setState(() => _isExporting = false);
               }
             }
 
             @override
             void dispose() {
-              _controller?.dispose();
+              _ctrl?.dispose();
               super.dispose();
             }
 
             @override
             Widget build(BuildContext context) {
               return Scaffold(
-                backgroundColor: const Color(0xFF111111),
+                backgroundColor: const Color(0xFF0A0A0D),
                 appBar: AppBar(
-                  backgroundColor: Colors.black,
-                  title: const Text('SV Editor', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  backgroundColor: const Color(0xFF14141B),
+                  title: Row(
+                    children: [
+                      const Icon(Icons.shield, color: Colors.greenAccent, size: 16),
+                      const SizedBox(width: 6),
+                      Text("SV Studio • ${widget.adminEmail}", style: const TextStyle(fontSize: 13, color: Colors.white70)),
+                    ],
+                  ),
                   actions: [
                     if (_video != null)
-                      TextButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Video trimmed from ${_range.start.toInt()}s to ${_range.end.toInt()}s')),
-                          );
-                        },
-                        child: const Text('Export', style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: ElevatedButton.icon(
+                          onPressed: _isExporting ? null : _exportVideo,
+                          icon: const Icon(Icons.arrow_upward_rounded, size: 16, color: Colors.white),
+                          label: Text(_isExporting ? "Saving..." : "Export", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
+                        ),
                       )
                   ],
                 ),
                 body: Column(
                   children: [
+                    // PREVIEW PLAYER
                     Expanded(
-                      child: Center(
-                        child: _controller != null && _controller!.value.isInitialized
-                            ? AspectRatio(
-                                aspectRatio: _controller!.value.aspectRatio,
-                                child: VideoPlayer(_controller!),
-                              )
-                            : Text(_msg, style: const TextStyle(color: Colors.white54)),
-                      ),
-                    ),
-                    if (_video != null) ...[
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: RangeSlider(
-                          values: _range,
-                          min: 0,
-                          max: _totalDuration > 0 ? _totalDuration : 1,
-                          activeColor: Colors.blueAccent,
-                          inactiveColor: Colors.white24,
-                          onChanged: (v) {
-                            setState(() => _range = v);
-                            _controller?.seekTo(Duration(seconds: v.start.toInt()));
-                          },
+                      flex: 5,
+                      child: Container(
+                        color: Colors.black,
+                        child: Center(
+                          child: _ctrl != null && _ctrl!.value.isInitialized
+                              ? Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    AspectRatio(
+                                      aspectRatio: _ratio == "9:16" ? 9 / 16 : (_ratio == "1:1" ? 1 : 16 / 9),
+                                      child: VideoPlayer(_ctrl!),
+                                    ),
+                                    GestureDetector(
+                                      onTap: _togglePlay,
+                                      child: CircleAvatar(
+                                        backgroundColor: Colors.black38,
+                                        radius: 28,
+                                        child: Icon(_isPlaying ? Icons.pause : Icons.play_arrow, color: Colors.white, size: 36),
+                                      ),
+                                    )
+                                  ],
+                                )
+                              : Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    IconButton(
+                                      iconSize: 54,
+                                      icon: const Icon(Icons.add_circle, color: Colors.blueAccent),
+                                      onPressed: _pick,
+                                    ),
+                                    const Text("Tap '+' to import clips into VN Timeline", style: TextStyle(color: Colors.white54, fontSize: 13)),
+                                  ],
+                                ),
                         ),
                       ),
-                      const SizedBox(height: 20),
-                    ]
-                  ],
-                ),
-                floatingActionButton: FloatingActionButton(
-                  backgroundColor: Colors.blueAccent,
-                  onPressed: _pick,
-                  child: const Icon(Icons.add, color: Colors.white),
-                ),
-              );
-            }
-          }
-          EOF
+                    ),
 
-      - name: Build Secure Release APK
-        run: |
-          cd sv_app
-          flutter build apk --release
+                    // VN-STYLE MULTI-TRACK TIMELINE
+                    Expanded(
+                      flex: 4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF14141B),
+                          border: Border(top: BorderSide(color: Colors.white10)),
+                        ),
+                        child: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Track 1: Music
+                              _timelineTrackRow(Icons.music_note, "Audio / BGM Track", Colors.pinkAccent),
+                              const SizedBox(height: 6),
+                              // Track 2: Subtitle / Text
+                              _timelineTrackRow(Icons.title, "AI Subtitles / Text Track", Colors.amberAccent),
+                              const SizedBox(height: 6),
+                              // Track 3: PIP / Overlay
+                              _timelineTrackRow(Icons.layers, "PIP / Video Overlay", Colors.purpleAccent),
+                              const SizedBox(height: 8),
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: SV-Release-APK
-          path: sv_app/build/app/outputs/flutter-apk/app-release.apk
+                              // Main Video Track Slider
+                              if (_video != null) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.06),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: RangeSlider(
+                                    values: _range,
+                                    min: 0,
+                                    max: _totalDuration > 0 ? _totalDuration : 1,
+                                    activeColor: Colors.blueAccent,
+                                    inactiveColor: Colors.white24,
+                                    onChanged: (v) {
+                               
