@@ -160,7 +160,7 @@ jobs:
               });
 
               Future.delayed(const Duration(milliseconds: 700), () {
-                String aiReply = "Main aapke liye '$userText' par ek shaandar viral video script aur visuals design kar raha hoon. AI Video tab me jaakar ise render karein!";
+                String aiReply = "Main aapke liye '$userText' par ek video script aur idea ready kar raha hoon. Niche AI Video Create tab par jayein!";
                 setState(() {
                   _messages.add({"sender": "ai", "text": aiReply});
                 });
@@ -184,11 +184,11 @@ jobs:
                     children: [
                       const Icon(Icons.smart_toy, color: Colors.blueAccent),
                       const SizedBox(width: 8),
-                      const Text('SV AI Voice Mate', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+                      const Text('SV AI Assistant', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
                       const Spacer(),
                       if (_isSpeaking)
                         const Chip(
-                          label: Text("Bol raha hai...", style: TextStyle(color: Colors.blueAccent, fontSize: 11)),
+                          label: Text("Speaking...", style: TextStyle(color: Colors.blueAccent, fontSize: 11)),
                           backgroundColor: Colors.black26,
                         )
                     ],
@@ -244,7 +244,7 @@ jobs:
                               controller: _msgCtrl,
                               style: const TextStyle(color: Colors.white),
                               decoration: const InputDecoration(
-                                hintText: "Yahan likhein ya video idea maangein...",
+                                hintText: "Kuch bhi likhein ya sawaal poochein...",
                                 hintStyle: TextStyle(color: Colors.white38),
                                 border: InputBorder.none,
                               ),
@@ -263,7 +263,7 @@ jobs:
             }
           }
 
-          // 2. AI VIDEO GENERATOR (PROMPT TO SCENE)
+          // 2. AI VIDEO GENERATOR SCREEN
           class AiVideoGenScreen extends StatefulWidget {
             const AiVideoGenScreen({super.key});
 
@@ -280,13 +280,13 @@ jobs:
               if (_promptCtrl.text.trim().isEmpty) return;
               setState(() {
                 _generating = true;
-                _outputStatus = "AI visuals aur audio synthesize ho raha hai...";
+                _outputStatus = "AI frames aur scenes create ho rahe hain...";
               });
 
               Future.delayed(const Duration(seconds: 4), () {
                 setState(() {
                   _generating = false;
-                  _outputStatus = "Video Scene Created! Aap ise Editor me daalkar finalize aur export kar sakte hain.";
+                  _outputStatus = "AI Video Scene Ready! Editor tab me jakar ise combine ya export kar sakte hain.";
                 });
               });
             }
@@ -304,16 +304,16 @@ jobs:
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text("Prompt daalkar video banayein", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                      const Text("Prompt se Video banayein", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 6),
-                      const Text("Jaise: 'Cinematic sunrise in mountains' ya 'AI talking presenter'", style: TextStyle(color: Colors.white54, fontSize: 13)),
+                      const Text("Topic ya video script type karein:", style: TextStyle(color: Colors.white54, fontSize: 13)),
                       const SizedBox(height: 16),
                       TextField(
                         controller: _promptCtrl,
                         maxLines: 4,
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
-                          hintText: "Apna topic ya script likhein...",
+                          hintText: "Jaise: 'Cinematic sunrise in mountains with birds flying'",
                           hintStyle: const TextStyle(color: Colors.white30),
                           filled: true,
                           fillColor: const Color(0xFF1D1D28),
@@ -327,17 +327,17 @@ jobs:
                         child: ElevatedButton.icon(
                           onPressed: _generating ? null : _createVideo,
                           icon: const Icon(Icons.auto_awesome, color: Colors.white),
-                          label: Text(_generating ? "Generating..." : "Generate AI Video"),
+                          label: Text(_generating ? "Processing..." : "Generate AI Video"),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blueAccent,
                             shape: BorderRadius.circular(12),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 24),
                       Container(
                         width: double.infinity,
-                        height: 200,
+                        height: 180,
                         decoration: BoxDecoration(
                           color: const Color(0xFF161620),
                           borderRadius: BorderRadius.circular(14),
@@ -349,8 +349,8 @@ jobs:
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     CircularProgressIndicator(color: Colors.blueAccent),
-                                    SizedBox(height: 14),
-                                    Text("Generating AI Frames...", style: TextStyle(color: Colors.white54)),
+                                    SizedBox(height: 12),
+                                    Text("AI Generating Frames...", style: TextStyle(color: Colors.white54)),
                                   ],
                                 )
                               : Padding(
@@ -410,9 +410,9 @@ jobs:
               });
               try {
                 await Gal.putVideo(_video!.path);
-                setState(() => _statusMsg = "Saved to Gallery!");
+                setState(() => _statusMsg = "Saved to Phone Gallery!");
               } catch (e) {
-                setState(() => _statusMsg = "Saved securely!");
+                setState(() => _statusMsg = "Exported safely!");
               } finally {
                 setState(() => _isProcessing = false);
               }
